@@ -8,6 +8,8 @@ import tkinter as tk
 import threading
 import requests
 from utils.speech import Speaker
+import cv2
+import numpy as np
 
 
 class FrontEndWin:
@@ -17,15 +19,15 @@ class FrontEndWin:
     1. 视频播放
     2. 弹窗显示+语音播报
     '''
-    def __init__(self, master):
+    def __init__(self, master, popup_w, popup_h):
         self.master = master
         self.master.withdraw()  # 隐藏主窗口
 
         self.screen_w = self.master.winfo_screenwidth()
         self.screen_h = self.master.winfo_screenheight()
 
-        self.popup_w = 800
-        self.popup_h = 450
+        self.popup_w = popup_w
+        self.popup_h = popup_h
 
         self.play_thread = None  # 初始化线程
         self.break_sign = False  # 初始化线程结束标志
@@ -59,19 +61,26 @@ class FrontEndWin:
         canvas.pack()
 
         response = requests.get(video_url, stream=True)
-        byte_data = b''
-        for chunk in response.iter_content(chunk_size=1024):  # 2073600
+        # byte_data = b''
+        for chunk in response.iter_content(chunk_size=2073600):  # 2073600 1024
             if self.break_sign:
                 break
-            byte_data += chunk
-            start = byte_data.find(b'\xff\xd8')
-            end = byte_data.find(b'\xff\xd9')
+            # byte_data += chunk
+            # start = byte_data.find(b'\xff\xd8')
+            # end = byte_data.find(b'\xff\xd9')
+            start = chunk.find(b'\xff\xd8')
+            end = chunk.find(b'\xff\xd9')
             if start != -1 and end != -1:
-                img = byte_data[start:end+2]
+                # img = byte_data[start:end+2]
+                source = chunk[start:end+2]
                 # byte_data = byte_data[end+2:]
-                byte_data = b''
+                # byte_data = b''
 
-                img = Image.open(io.BytesIO(img))
+                img = Image.open(io.BytesIO(source))
+                # img = cv2.imdecode(np.frombuffer(source, dtype=np.uint8), cv2.IMREAD_COLOR)
+                # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  # Add this line
+                # img= Image.fromarray(img)
+
                 img = self.keep_scale_resize(self.screen_w, self.screen_h, img)
                 img = ImageTk.PhotoImage(img)
                 canvas.create_image(0, 0, anchor='nw', image=img)
@@ -98,7 +107,7 @@ class FrontEndWin:
             img = ImageTk.PhotoImage(img)
 
             child_window = tk.Toplevel(self.master)  # 创建子窗口
-            child_window.withdraw()  # 隐藏窗口
+            child_window.withdraw()  # 隐藏窗口，防止出现空白窗口
             child_window.overrideredirect(True)  # 移除窗口装饰
             child_window.geometry(f"{new_w}x{new_h}+{self.screen_w-new_w}+{self.screen_h}")  # 初始化位置，右下角屏幕之外
             child_window.attributes("-topmost", True)  # 保持窗口在顶部
@@ -117,10 +126,15 @@ class FrontEndWin:
 
     # 不拉伸缩放
     def keep_scale_resize(self, max_w, max_h, img: Image.Image):
+        # ori_h, ori_w, _ = img.shape
         ori_w, ori_h = img.size
-        scale = min(max_w / ori_w, max_h / ori_h)
-        new_shape = (int(ori_w * scale), int(ori_h * scale))
-        return img.resize(new_shape, Image.ANTIALIAS)
+        if max_w == ori_w and max_h == ori_h:
+            return img
+        else:
+            scale = min(max_w / ori_w, max_h / ori_h)
+            new_shape = (int(ori_w * scale), int(ori_h * scale))
+            # return cv2.resize(img, new_shape, cv2.INTER_LINEAR)
+            return img.resize(new_shape, Image.ANTIALIAS)
 
     # 窗口上升下降
     def move_window(self, window, sleep_time=0.005, direction='up'):
