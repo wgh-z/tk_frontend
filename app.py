@@ -15,10 +15,13 @@ from utils.UI import FrontEndWin
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
+with open('cfg/frontend.yaml', 'r', encoding='utf-8') as f:
+    cfg = yaml.load(f, Loader=yaml.FullLoader)
+
 def run_tk_app():
-    global frontend_win
+    global frontend_win, cfg
     root = Tk()
-    frontend_win = FrontEndWin(master=root)
+    frontend_win = FrontEndWin(master=root, popup_w=cfg['popup_w'], popup_h=cfg['popup_h'])
     root.mainloop()
 
 @app.route('/start', methods=['post'])
@@ -50,8 +53,6 @@ def popup():
 def run_flask_app():
     global cfg
     # cfg = Path('cfg/frontend.yaml').read_text().rsplit()
-    with open('cfg/frontend.yaml', 'r', encoding='utf-8') as f:
-        cfg = yaml.load(f, Loader=yaml.FullLoader)
     app.run(host=cfg['ip'], port=cfg['port'], debug=False)
 
 
