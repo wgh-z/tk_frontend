@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# pyinstaller -F app.py
+
 # 用户tk前端的主程序，用于启动flask服务和tk多路视频显示和tk弹窗显示
 import threading
 import yaml
