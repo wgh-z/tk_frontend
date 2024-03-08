@@ -8,8 +8,8 @@ import tkinter as tk
 import threading
 import requests
 from utils.speech import Speaker
-import cv2
-import numpy as np
+# import cv2
+# import numpy as np
 
 
 class FrontEndWin:
